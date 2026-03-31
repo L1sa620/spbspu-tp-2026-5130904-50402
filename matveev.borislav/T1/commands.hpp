@@ -1,0 +1,16 @@
+#ifndef MATVEEV_COMMANDS_HPP
+#define MATVEEV_COMMANDS_HPP
+ 
+#include <iostream>
+#include "note.hpp"
+ 
+namespace matveev
+{
+  using cmd_t = void(*)(std::istream&, std::ostream&, db_t&);
+ 
+  void create_note(std::istream&, std::ostream&, db_t&);
+  void show_note(std::istream&, std::ostream&, db_t&);
+  void drop_note(std::istream&, std::ostream&, db_t&);
+}
+ 
+#endif
