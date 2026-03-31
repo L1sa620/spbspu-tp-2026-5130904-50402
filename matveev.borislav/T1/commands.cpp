@@ -2,9 +2,19 @@
 #include <stdexcept>
 #include <iomanip>
 #include <algorithm>
- 
+
 namespace
 {
+  std::string readArg(std::istream& in)
+  {
+    std::string arg;
+    if (!(in >> arg))
+    {
+      throw std::logic_error("missing argument");
+    }
+    return arg;
+  }
+
   std::shared_ptr< matveev::Note >& findNote(const std::string& name, matveev::db_t& db)
   {
     auto it = db.find(name);
@@ -15,11 +25,10 @@ namespace
     return it->second;
   }
 }
- 
+
 void matveev::create_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string name;
-  in >> name;
+  std::string name = readArg(in);
   if (db.count(name))
   {
     throw std::logic_error("note already exists");
@@ -28,42 +37,42 @@ void matveev::create_note(std::istream& in, std::ostream&, db_t& db)
   note->name = name;
   db[name] = note;
 }
- 
+
 void matveev::add_line(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string name;
-  in >> name;
+  std::string name = readArg(in);
   auto& note = findNote(name, db);
   std::string text;
-  in >> std::quoted(text);
+  if (!(in >> std::quoted(text)))
+  {
+    throw std::logic_error("missing quoted text");
+  }
   note->lines.push_back(text);
 }
- 
+
 void matveev::show_note(std::istream& in, std::ostream& out, db_t& db)
 {
-  std::string name;
-  in >> name;
+  std::string name = readArg(in);
   auto& note = findNote(name, db);
   for (const auto& line : note->lines)
   {
     out << line << "\n";
   }
 }
- 
+
 void matveev::drop_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string name;
-  in >> name;
+  std::string name = readArg(in);
   if (!db.erase(name))
   {
     throw std::logic_error("note not found");
   }
 }
- 
+
 void matveev::link_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string from, to;
-  in >> from >> to;
+  std::string from = readArg(in);
+  std::string to = readArg(in);
   auto& note_from = findNote(from, db);
   auto& note_to = findNote(to, db);
   auto& links = note_from->links;
@@ -80,11 +89,10 @@ void matveev::link_note(std::istream& in, std::ostream&, db_t& db)
   }
   links.push_back({to, note_to});
 }
- 
+
 void matveev::mind_note(std::istream& in, std::ostream& out, db_t& db)
 {
-  std::string name;
-  in >> name;
+  std::string name = readArg(in);
   auto& note = findNote(name, db);
   for (const auto& link : note->links)
   {
@@ -94,11 +102,11 @@ void matveev::mind_note(std::istream& in, std::ostream& out, db_t& db)
     }
   }
 }
- 
+
 void matveev::halt_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string from, to;
-  in >> from >> to;
+  std::string from = readArg(in);
+  std::string to = readArg(in);
   auto& note = findNote(from, db);
   auto& links = note->links;
   auto found = std::find_if(links.begin(), links.end(),
@@ -113,11 +121,10 @@ void matveev::halt_note(std::istream& in, std::ostream&, db_t& db)
   }
   links.erase(found);
 }
- 
+
 void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
 {
-  std::string name;
-  in >> name;
+  std::string name = readArg(in);
   auto& note = findNote(name, db);
   size_t count = 0;
   for (const auto& link : note->links)
@@ -129,11 +136,10 @@ void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
   }
   out << count << "\n";
 }
- 
+
 void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string name;
-  in >> name;
+  std::string name = readArg(in);
   auto& note = findNote(name, db);
   auto& links = note->links;
   auto new_end = std::remove_if(links.begin(), links.end(),
