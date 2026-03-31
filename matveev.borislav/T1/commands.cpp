@@ -3,6 +3,19 @@
 #include <iomanip>
 #include <algorithm>
  
+namespace
+{
+  std::shared_ptr< matveev::Note >& findNote(const std::string& name, matveev::db_t& db)
+  {
+    auto it = db.find(name);
+    if (it == db.end())
+    {
+      throw std::logic_error("note not found");
+    }
+    return it->second;
+  }
+}
+ 
 void matveev::create_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string name;
@@ -20,26 +33,18 @@ void matveev::add_line(std::istream& in, std::ostream&, db_t& db)
 {
   std::string name;
   in >> name;
-  auto it = db.find(name);
-  if (it == db.end())
-  {
-    throw std::logic_error("note not found");
-  }
+  auto& note = findNote(name, db);
   std::string text;
   in >> std::quoted(text);
-  it->second->lines.push_back(text);
+  note->lines.push_back(text);
 }
  
 void matveev::show_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string name;
   in >> name;
-  auto it = db.find(name);
-  if (it == db.end())
-  {
-    throw std::logic_error("note not found");
-  }
-  for (const auto& line : it->second->lines)
+  auto& note = findNote(name, db);
+  for (const auto& line : note->lines)
   {
     out << line << "\n";
   }
@@ -59,38 +64,29 @@ void matveev::link_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string from, to;
   in >> from >> to;
-  auto it_from = db.find(from);
-  auto it_to = db.find(to);
-  if (it_from == db.end() || it_to == db.end())
-  {
-    throw std::logic_error("note not found");
-  }
-  auto& links = it_from->second->links;
-  auto target = it_to->second;
+  auto& note_from = findNote(from, db);
+  auto& note_to = findNote(to, db);
+  auto& links = note_from->links;
   auto dup = std::find_if(links.begin(), links.end(),
-    [&target](const std::pair< std::string, std::weak_ptr< Note > >& p)
+    [&note_to](const std::pair< std::string, std::weak_ptr< Note > >& p)
     {
       auto locked = p.second.lock();
-      return locked && locked == target;
+      return locked && locked == note_to;
     }
   );
   if (dup != links.end())
   {
     throw std::logic_error("link already exists");
   }
-  links.push_back({to, it_to->second});
+  links.push_back({to, note_to});
 }
  
 void matveev::mind_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string name;
   in >> name;
-  auto it = db.find(name);
-  if (it == db.end())
-  {
-    throw std::logic_error("note not found");
-  }
-  for (const auto& link : it->second->links)
+  auto& note = findNote(name, db);
+  for (const auto& link : note->links)
   {
     if (auto locked = link.second.lock())
     {
@@ -103,12 +99,8 @@ void matveev::halt_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string from, to;
   in >> from >> to;
-  auto it = db.find(from);
-  if (it == db.end())
-  {
-    throw std::logic_error("note not found");
-  }
-  auto& links = it->second->links;
+  auto& note = findNote(from, db);
+  auto& links = note->links;
   auto found = std::find_if(links.begin(), links.end(),
     [&to](const std::pair< std::string, std::weak_ptr< Note > >& p)
     {
@@ -126,13 +118,9 @@ void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string name;
   in >> name;
-  auto it = db.find(name);
-  if (it == db.end())
-  {
-    throw std::logic_error("note not found");
-  }
+  auto& note = findNote(name, db);
   size_t count = 0;
-  for (const auto& link : it->second->links)
+  for (const auto& link : note->links)
   {
     if (link.second.expired())
     {
@@ -146,12 +134,8 @@ void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string name;
   in >> name;
-  auto it = db.find(name);
-  if (it == db.end())
-  {
-    throw std::logic_error("note not found");
-  }
-  auto& links = it->second->links;
+  auto& note = findNote(name, db);
+  auto& links = note->links;
   auto new_end = std::remove_if(links.begin(), links.end(),
     [](const std::pair< std::string, std::weak_ptr< Note > >& p)
     {
