@@ -10,6 +10,7 @@ int main()
  
   std::unordered_map< std::string, matveev::cmd_t > cmds;
   cmds["note"] = matveev::create_note;
+  cmds["line"] = matveev::add_line;
   cmds["show"] = matveev::show_note;
   cmds["drop"] = matveev::drop_note;
  
