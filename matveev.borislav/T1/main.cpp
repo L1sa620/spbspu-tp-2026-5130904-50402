@@ -17,6 +17,7 @@ int main()
   cmds["mind"] = matveev::mind_note;
   cmds["halt"] = matveev::halt_note;
   cmds["expired"] = matveev::expired_note;
+  cmds["refresh"] = matveev::refresh_note;
  
   std::string cmd;
   while (std::cin >> cmd)

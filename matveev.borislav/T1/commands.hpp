@@ -18,6 +18,7 @@ namespace matveev
   void halt_note(std::istream&, std::ostream&, db_t&);
  
   void expired_note(std::istream&, std::ostream&, db_t&);
+  void refresh_note(std::istream&, std::ostream&, db_t&);
 }
  
 #endif
