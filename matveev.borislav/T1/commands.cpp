@@ -54,6 +54,11 @@ void matveev::show_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string name = readArg(in);
   auto& note = findNote(name, db);
+  if (note->lines.empty())
+  {
+    out << "\n";
+    return;
+  }
   for (const auto& line : note->lines)
   {
     out << line << "\n";
@@ -94,12 +99,18 @@ void matveev::mind_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string name = readArg(in);
   auto& note = findNote(name, db);
+  bool printed = false;
   for (const auto& link : note->links)
   {
     if (auto locked = link.second.lock())
     {
       out << locked->name << "\n";
+      printed = true;
     }
+  }
+  if (!printed)
+  {
+    out << "\n";
   }
 }
 
