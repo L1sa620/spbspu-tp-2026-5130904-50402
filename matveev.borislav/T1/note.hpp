@@ -1,10 +1,10 @@
 #ifndef MATVEEV_NOTE_HPP
 #define MATVEEV_NOTE_HPP
  
-#include <string>
-#include <vector>
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <vector>
  
 namespace matveev
 {

@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <iomanip>
 #include <algorithm>
-
+ 
 namespace
 {
   std::string readArg(std::istream& in)
@@ -14,7 +14,7 @@ namespace
     }
     return arg;
   }
-
+ 
   std::shared_ptr< matveev::Note >& findNote(const std::string& name, matveev::db_t& db)
   {
     auto it = db.find(name);
@@ -25,7 +25,7 @@ namespace
     return it->second;
   }
 }
-
+ 
 void matveev::create_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string name = readArg(in);
@@ -37,7 +37,7 @@ void matveev::create_note(std::istream& in, std::ostream&, db_t& db)
   note->name = name;
   db[name] = note;
 }
-
+ 
 void matveev::add_line(std::istream& in, std::ostream&, db_t& db)
 {
   std::string name = readArg(in);
@@ -49,7 +49,7 @@ void matveev::add_line(std::istream& in, std::ostream&, db_t& db)
   }
   note->lines.push_back(text);
 }
-
+ 
 void matveev::show_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string name = readArg(in);
@@ -59,7 +59,7 @@ void matveev::show_note(std::istream& in, std::ostream& out, db_t& db)
     out << line << "\n";
   }
 }
-
+ 
 void matveev::drop_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string name = readArg(in);
@@ -68,7 +68,7 @@ void matveev::drop_note(std::istream& in, std::ostream&, db_t& db)
     throw std::logic_error("note not found");
   }
 }
-
+ 
 void matveev::link_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string from = readArg(in);
@@ -89,7 +89,7 @@ void matveev::link_note(std::istream& in, std::ostream&, db_t& db)
   }
   links.push_back({to, note_to});
 }
-
+ 
 void matveev::mind_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string name = readArg(in);
@@ -102,7 +102,7 @@ void matveev::mind_note(std::istream& in, std::ostream& out, db_t& db)
     }
   }
 }
-
+ 
 void matveev::halt_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string from = readArg(in);
@@ -121,7 +121,7 @@ void matveev::halt_note(std::istream& in, std::ostream&, db_t& db)
   }
   links.erase(found);
 }
-
+ 
 void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string name = readArg(in);
@@ -136,7 +136,7 @@ void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
   }
   out << count << "\n";
 }
-
+ 
 void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
 {
   std::string name = readArg(in);
@@ -149,4 +149,19 @@ void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
     }
   );
   links.erase(new_end, links.end());
+}
+ 
+matveev::cmd_map_t matveev::initCommands()
+{
+  cmd_map_t cmds;
+  cmds["note"] = create_note;
+  cmds["line"] = add_line;
+  cmds["show"] = show_note;
+  cmds["drop"] = drop_note;
+  cmds["link"] = link_note;
+  cmds["mind"] = mind_note;
+  cmds["halt"] = halt_note;
+  cmds["expired"] = expired_note;
+  cmds["refresh"] = refresh_note;
+  return cmds;
 }

@@ -1,23 +1,12 @@
 #include <iostream>
 #include <string>
-#include <unordered_map>
 #include <limits>
 #include "commands.hpp"
  
 int main()
 {
   matveev::db_t db;
- 
-  std::unordered_map< std::string, matveev::cmd_t > cmds;
-  cmds["note"] = matveev::create_note;
-  cmds["line"] = matveev::add_line;
-  cmds["show"] = matveev::show_note;
-  cmds["drop"] = matveev::drop_note;
-  cmds["link"] = matveev::link_note;
-  cmds["mind"] = matveev::mind_note;
-  cmds["halt"] = matveev::halt_note;
-  cmds["expired"] = matveev::expired_note;
-  cmds["refresh"] = matveev::refresh_note;
+  auto cmds = matveev::initCommands();
  
   std::string cmd;
   while (std::cin >> cmd)
