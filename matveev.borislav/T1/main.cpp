@@ -2,12 +2,12 @@
 #include <string>
 #include <limits>
 #include "commands.hpp"
- 
+
 int main()
 {
   matveev::db_t db;
   auto cmds = matveev::initCommands();
- 
+
   std::string cmd;
   while (std::cin >> cmd)
   {
@@ -26,6 +26,6 @@ int main()
       std::cout << "<INVALID COMMAND>\n";
     }
   }
- 
+
   return 0;
 }
