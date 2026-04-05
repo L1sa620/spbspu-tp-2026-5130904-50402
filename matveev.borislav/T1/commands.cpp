@@ -1,7 +1,7 @@
 #include "commands.hpp"
-#include <stdexcept>
-#include <iomanip>
 #include <algorithm>
+#include <iomanip>
+#include <stdexcept>
 
 namespace
 {
