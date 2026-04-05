@@ -41,12 +41,12 @@ void matveev::create_note(std::istream& in, std::ostream&, db_t& db)
 void matveev::add_line(std::istream& in, std::ostream&, db_t& db)
 {
   std::string name = readArg(in);
-  auto& note = findNote(name, db);
   std::string text;
   if (!(in >> std::quoted(text)))
   {
     throw std::logic_error("missing quoted text");
   }
+  auto& note = findNote(name, db);
   note->lines.push_back(text);
 }
 
@@ -108,6 +108,7 @@ void matveev::halt_note(std::istream& in, std::ostream&, db_t& db)
   std::string from = readArg(in);
   std::string to = readArg(in);
   auto& note = findNote(from, db);
+  findNote(to, db);
   auto& links = note->links;
   auto found = std::find_if(links.begin(), links.end(),
     [&to](const std::pair< std::string, std::weak_ptr< Note > >& p)
