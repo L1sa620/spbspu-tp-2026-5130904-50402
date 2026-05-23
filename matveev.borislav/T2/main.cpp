@@ -16,18 +16,6 @@ struct DataStruct
   std::string key3;
 };
 
-DataStruct::DataStruct():
-  key1(0),
-  key2(0),
-  key3()
-{}
-
-DataStruct::DataStruct(unsigned long long key1_value, char key2_value, const std::string& key3_value):
-  key1(key1_value),
-  key2(key2_value),
-  key3(key3_value)
-{}
-
 struct DelimiterIO
 {
   char expected;
@@ -61,19 +49,8 @@ struct KeyIO
 class IOGuard
 {
 public:
-  explicit IOGuard(std::basic_ios< char >& stream):
-    stream_(stream),
-    flags_(stream.flags()),
-    fill_(stream.fill()),
-    precision_(stream.precision())
-  {}
-
-  ~IOGuard()
-  {
-    stream_.flags(flags_);
-    stream_.fill(fill_);
-    stream_.precision(precision_);
-  }
+  explicit IOGuard(std::basic_ios< char >& stream);
+  ~IOGuard();
 
 private:
   std::basic_ios< char >& stream_;
@@ -81,6 +58,42 @@ private:
   char fill_;
   std::streamsize precision_;
 };
+
+DataStruct::DataStruct():
+  key1(0),
+  key2(0),
+  key3()
+{}
+
+DataStruct::DataStruct(unsigned long long key1_value, char key2_value, const std::string& key3_value):
+  key1(key1_value),
+  key2(key2_value),
+  key3(key3_value)
+{}
+
+IOGuard::IOGuard(std::basic_ios< char >& stream):
+  stream_(stream),
+  flags_(stream.flags()),
+  fill_(stream.fill()),
+  precision_(stream.precision())
+{}
+
+IOGuard::~IOGuard()
+{
+  stream_.flags(flags_);
+  stream_.fill(fill_);
+  stream_.precision(precision_);
+}
+
+bool isUnsignedSuffix(char c)
+{
+  return c == 'u' || c == 'U';
+}
+
+bool isLongSuffix(char c)
+{
+  return c == 'l' || c == 'L';
+}
 
 std::istream& operator>>(std::istream& in, DelimiterIO&& dest)
 {
@@ -128,26 +141,73 @@ std::istream& operator>>(std::istream& in, LabelIO&& dest)
 
 std::istream& operator>>(std::istream& in, UllLitIO&& dest)
 {
-  unsigned long long value = 0;
+  std::istream::sentry sentry(in);
 
-  in >> value >> LabelIO{ "ull" };
-
-  if (in)
+  if (!sentry)
   {
-    dest.ref = value;
+    return in;
   }
 
+  in >> std::ws;
+
+  if (in.peek() == '-')
+  {
+    in.setstate(std::ios::failbit);
+    return in;
+  }
+
+  unsigned long long value = 0;
+  in >> value;
+
+  if (!in)
+  {
+    return in;
+  }
+
+  IOGuard guard(in);
+  in >> std::noskipws;
+
+  char first = 0;
+  char second = 0;
+  char third = 0;
+
+  in >> first >> second >> third;
+
+  if (!in || !isUnsignedSuffix(first) || !isLongSuffix(second) || !isLongSuffix(third))
+  {
+    in.setstate(std::ios::failbit);
+    return in;
+  }
+
+  dest.ref = value;
   return in;
 }
 
 std::istream& operator>>(std::istream& in, ChrLitIO&& dest)
 {
+  std::istream::sentry sentry(in);
+
+  if (!sentry)
+  {
+    return in;
+  }
+
   IOGuard guard(in);
 
   in >> DelimiterIO{ '\'' };
 
+  if (!in)
+  {
+    return in;
+  }
+
   char value = 0;
   in >> std::noskipws >> value;
+
+  if (!in)
+  {
+    return in;
+  }
 
   in >> DelimiterIO{ '\'' };
 
@@ -161,7 +221,19 @@ std::istream& operator>>(std::istream& in, ChrLitIO&& dest)
 
 std::istream& operator>>(std::istream& in, StringIO&& dest)
 {
+  std::istream::sentry sentry(in);
+
+  if (!sentry)
+  {
+    return in;
+  }
+
   in >> DelimiterIO{ '"' };
+
+  if (!in)
+  {
+    return in;
+  }
 
   std::string value;
   std::getline(in, value, '"');
@@ -176,6 +248,13 @@ std::istream& operator>>(std::istream& in, StringIO&& dest)
 
 std::istream& operator>>(std::istream& in, KeyIO&& dest)
 {
+  std::istream::sentry sentry(in);
+
+  if (!sentry)
+  {
+    return in;
+  }
+
   in >> LabelIO{ "key" };
 
   char number = 0;
