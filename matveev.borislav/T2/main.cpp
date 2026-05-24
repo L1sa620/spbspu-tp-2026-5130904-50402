@@ -412,7 +412,7 @@ std::ostream& operator<<(std::ostream& out, const DataStruct& data)
   return out;
 }
 
-bool operator<(const DataStruct& lhs, const DataStruct& rhs)
+bool compareDataStruct(const DataStruct& lhs, const DataStruct& rhs)
 {
   if (lhs.key1 != rhs.key1)
   {
@@ -450,7 +450,7 @@ int main()
     }
   );
 
-  std::sort(data.begin(), data.end());
+  std::sort(data.begin(), data.end(), matveev::compareDataStruct);
 
   using output_t = std::ostream_iterator< matveev::DataStruct >;
   std::copy(data.begin(), data.end(), output_t{ std::cout, "\n" });
