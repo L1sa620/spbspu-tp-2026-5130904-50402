@@ -42,9 +42,17 @@ struct StringIO
   std::string& ref;
 };
 
+enum class KeyType
+{
+  invalid,
+  key1,
+  key2,
+  key3
+};
+
 struct KeyIO
 {
-  int& ref;
+  KeyType& ref;
 };
 
 struct Line
@@ -279,13 +287,28 @@ std::istream& operator>>(std::istream& in, KeyIO&& dest)
   char number = 0;
   in >> number;
 
-  if (!in || number < '1' || number > '3')
+  if (!in)
   {
-    in.setstate(std::ios::failbit);
     return in;
   }
 
-  dest.ref = number - '0';
+  if (number == '1')
+  {
+    dest.ref = KeyType::key1;
+  }
+  else if (number == '2')
+  {
+    dest.ref = KeyType::key2;
+  }
+  else if (number == '3')
+  {
+    dest.ref = KeyType::key3;
+  }
+  else
+  {
+    in.setstate(std::ios::failbit);
+  }
+
   return in;
 }
 
@@ -307,20 +330,20 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
 
   for (size_t i = 0; i < 3 && in; ++i)
   {
-    int key = 0;
+    KeyType key = KeyType::invalid;
     in >> KeyIO{ key };
 
-    if (key == 1 && !key1)
+    if (key == KeyType::key1 && !key1)
     {
       in >> UllLitIO{ input.key1 };
       key1 = true;
     }
-    else if (key == 2 && !key2)
+    else if (key == KeyType::key2 && !key2)
     {
       in >> ChrLitIO{ input.key2 };
       key2 = true;
     }
-    else if (key == 3 && !key3)
+    else if (key == KeyType::key3 && !key3)
     {
       in >> StringIO{ input.key3 };
       key3 = true;
