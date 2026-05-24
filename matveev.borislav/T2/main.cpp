@@ -50,6 +50,21 @@ enum class KeyType
   key3
 };
 
+struct FieldsState
+{
+  FieldsState();
+
+  bool key1;
+  bool key2;
+  bool key3;
+};
+
+FieldsState::FieldsState():
+  key1(false),
+  key2(false),
+  key3(false)
+{}
+
 struct KeyIO
 {
   KeyType& ref;
@@ -312,6 +327,34 @@ std::istream& operator>>(std::istream& in, KeyIO&& dest)
   return in;
 }
 
+std::istream& readField(std::istream& in, DataStruct& data, FieldsState& state)
+{
+  KeyType key = KeyType::invalid;
+  in >> KeyIO{ key };
+
+  if (key == KeyType::key1 && !state.key1)
+  {
+    in >> UllLitIO{ data.key1 };
+    state.key1 = true;
+  }
+  else if (key == KeyType::key2 && !state.key2)
+  {
+    in >> ChrLitIO{ data.key2 };
+    state.key2 = true;
+  }
+  else if (key == KeyType::key3 && !state.key3)
+  {
+    in >> StringIO{ data.key3 };
+    state.key3 = true;
+  }
+  else
+  {
+    in.setstate(std::ios::failbit);
+  }
+
+  return in;
+}
+
 std::istream& operator>>(std::istream& in, DataStruct& data)
 {
   std::istream::sentry sentry(in);
@@ -322,43 +365,19 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
   }
 
   DataStruct input;
-  bool key1 = false;
-  bool key2 = false;
-  bool key3 = false;
+  FieldsState state;
 
   in >> DelimiterIO{ '(' } >> DelimiterIO{ ':' };
 
   for (size_t i = 0; i < 3 && in; ++i)
   {
-    KeyType key = KeyType::invalid;
-    in >> KeyIO{ key };
-
-    if (key == KeyType::key1 && !key1)
-    {
-      in >> UllLitIO{ input.key1 };
-      key1 = true;
-    }
-    else if (key == KeyType::key2 && !key2)
-    {
-      in >> ChrLitIO{ input.key2 };
-      key2 = true;
-    }
-    else if (key == KeyType::key3 && !key3)
-    {
-      in >> StringIO{ input.key3 };
-      key3 = true;
-    }
-    else
-    {
-      in.setstate(std::ios::failbit);
-    }
-
+    readField(in, input, state);
     in >> DelimiterIO{ ':' };
   }
 
   in >> DelimiterIO{ ')' };
 
-  if (in && key1 && key2 && key3)
+  if (in && state.key1 && state.key2 && state.key3)
   {
     data = input;
   }
