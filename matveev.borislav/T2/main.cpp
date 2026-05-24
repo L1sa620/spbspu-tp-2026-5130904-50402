@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -45,6 +46,24 @@ struct KeyIO
 {
   int& ref;
 };
+
+struct Line
+{
+  Line();
+
+  std::string value;
+};
+
+Line::Line():
+  value()
+{}
+
+std::istream& operator>>(std::istream& in, Line& line)
+{
+  line.value.clear();
+  std::getline(in >> std::ws, line.value);
+  return in;
+}
 
 class IOGuard
 {
@@ -328,6 +347,16 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
   return in;
 }
 
+bool readDataStructFromLine(const Line& line, DataStruct& data)
+{
+  std::istringstream input(line.value);
+
+  input >> data;
+  input >> std::ws;
+
+  return input && input.eof();
+}
+
 std::ostream& operator<<(std::ostream& out, const DataStruct& data)
 {
   IOGuard guard(out);
@@ -359,10 +388,25 @@ bool operator<(const DataStruct& lhs, const DataStruct& rhs)
 
 int main()
 {
+  std::vector< matveev::Line > lines;
   std::vector< matveev::DataStruct > data;
 
-  using input_t = std::istream_iterator< matveev::DataStruct >;
-  std::copy(input_t{ std::cin }, input_t{}, std::back_inserter(data));
+  using line_input_t = std::istream_iterator< matveev::Line >;
+  std::copy(line_input_t{ std::cin }, line_input_t{}, std::back_inserter(lines));
+
+  std::for_each(
+    lines.begin(),
+    lines.end(),
+    [&data](const matveev::Line& line)
+    {
+      matveev::DataStruct item;
+
+      if (matveev::readDataStructFromLine(line, item))
+      {
+        data.push_back(item);
+      }
+    }
+  );
 
   std::sort(data.begin(), data.end());
 
