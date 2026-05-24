@@ -81,6 +81,11 @@ FieldsState::FieldsState():
   key3(false)
 {}
 
+bool allFieldsRead(const FieldsState& state)
+{
+  return state.key1 && state.key2 && state.key3;
+}
+
 struct FieldIO
 {
   DataStruct& data;
@@ -425,7 +430,7 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
 
   in >> DelimiterIO{ ')' };
 
-  if (in && state.key1 && state.key2 && state.key3)
+  if (in && allFieldsRead(state))
   {
     data = input;
   }
@@ -433,7 +438,6 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
   {
     in.setstate(std::ios::failbit);
   }
-
   return in;
 }
 
