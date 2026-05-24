@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -369,11 +370,20 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
 
   in >> DelimiterIO{ '(' } >> DelimiterIO{ ':' };
 
-  for (size_t i = 0; i < 3 && in; ++i)
-  {
-    readField(in, input, state);
-    in >> DelimiterIO{ ':' };
-  }
+  std::array< int, 3 > fields{ { 0, 0, 0 } };
+
+  std::for_each(
+    fields.begin(),
+    fields.end(),
+    [&in, &input, &state](int)
+    {
+      if (in)
+      {
+        readField(in, input, state);
+        in >> DelimiterIO{ ':' };
+      }
+    }
+  );
 
   in >> DelimiterIO{ ')' };
 
