@@ -43,6 +43,21 @@ struct StringIO
   std::string& ref;
 };
 
+struct UllLitO
+{
+  const unsigned long long& ref;
+};
+
+struct ChrLitO
+{
+  const char& ref;
+};
+
+struct StringO
+{
+  const std::string& ref;
+};
+
 enum class KeyType
 {
   invalid,
@@ -65,6 +80,12 @@ FieldsState::FieldsState():
   key2(false),
   key3(false)
 {}
+
+struct FieldIO
+{
+  DataStruct& data;
+  FieldsState& state;
+};
 
 struct KeyIO
 {
@@ -289,6 +310,24 @@ std::istream& operator>>(std::istream& in, StringIO&& dest)
   return in;
 }
 
+std::ostream& operator<<(std::ostream& out, const UllLitO& dest)
+{
+  out << dest.ref << "ull";
+  return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const ChrLitO& dest)
+{
+  out << '\'' << dest.ref << '\'';
+  return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const StringO& dest)
+{
+  out << '"' << dest.ref << '"';
+  return out;
+}
+
 std::istream& operator>>(std::istream& in, KeyIO&& dest)
 {
   std::istream::sentry sentry(in);
@@ -328,25 +367,25 @@ std::istream& operator>>(std::istream& in, KeyIO&& dest)
   return in;
 }
 
-std::istream& readField(std::istream& in, DataStruct& data, FieldsState& state)
+std::istream& operator>>(std::istream& in, FieldIO&& dest)
 {
   KeyType key = KeyType::invalid;
   in >> KeyIO{ key };
 
-  if (key == KeyType::key1 && !state.key1)
+  if (key == KeyType::key1 && !dest.state.key1)
   {
-    in >> UllLitIO{ data.key1 };
-    state.key1 = true;
+    in >> UllLitIO{ dest.data.key1 };
+    dest.state.key1 = true;
   }
-  else if (key == KeyType::key2 && !state.key2)
+  else if (key == KeyType::key2 && !dest.state.key2)
   {
-    in >> ChrLitIO{ data.key2 };
-    state.key2 = true;
+    in >> ChrLitIO{ dest.data.key2 };
+    dest.state.key2 = true;
   }
-  else if (key == KeyType::key3 && !state.key3)
+  else if (key == KeyType::key3 && !dest.state.key3)
   {
-    in >> StringIO{ data.key3 };
-    state.key3 = true;
+    in >> StringIO{ dest.data.key3 };
+    dest.state.key3 = true;
   }
   else
   {
@@ -379,8 +418,7 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
     {
       if (in)
       {
-        readField(in, input, state);
-        in >> DelimiterIO{ ':' };
+        in >> FieldIO{ input, state } >> DelimiterIO{ ':' };
       }
     }
   );
@@ -414,9 +452,9 @@ std::ostream& operator<<(std::ostream& out, const DataStruct& data)
   IOGuard guard(out);
 
   out << "(:";
-  out << "key1 " << data.key1 << "ull";
-  out << ":key2 '" << data.key2 << "'";
-  out << ":key3 \"" << data.key3 << "\"";
+  out << "key1 " << UllLitO{ data.key1 };
+  out << ":key2 " << ChrLitO{ data.key2 };
+  out << ":key3 " << StringO{ data.key3 };
   out << ":)";
 
   return out;
