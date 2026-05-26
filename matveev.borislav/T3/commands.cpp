@@ -123,6 +123,31 @@ void matveev::doArea(std::ostream& out, const data_t& data, const std::string& a
   printArea(out, getAreaSum(selected));
 }
 
+void matveev::doCount(std::ostream& out, const data_t& data, const std::string& arg)
+{
+  if (arg == "EVEN")
+  {
+    out << std::count_if(data.begin(), data.end(), isEvenVertexes) << '\n';
+    return;
+  }
+
+  if (arg == "ODD")
+  {
+    out << std::count_if(data.begin(), data.end(), isOddVertexes) << '\n';
+    return;
+  }
+
+  size_t count = readSize(arg);
+
+  if (count < 3)
+  {
+    throw std::logic_error("invalid vertex count");
+  }
+
+  using namespace std::placeholders;
+  out << std::count_if(data.begin(), data.end(), std::bind(hasVertexCount, count, _1)) << '\n';
+}
+
 void matveev::executeCommand(
   std::ostream& out,
   const data_t& data,
@@ -135,6 +160,12 @@ void matveev::executeCommand(
     if (command == "AREA")
     {
       doArea(out, data, arg);
+      return;
+    }
+
+    if (command == "COUNT")
+    {
+      doCount(out, data, arg);
       return;
     }
 

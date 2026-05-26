@@ -12,6 +12,7 @@ namespace matveev
 using data_t = std::vector< Polygon >;
 
 void doArea(std::ostream& out, const data_t& data, const std::string& arg);
+void doCount(std::ostream& out, const data_t& data, const std::string& arg);
 void executeCommand(std::ostream& out, const data_t& data, const std::string& command, const std::string& arg);
 }
 
