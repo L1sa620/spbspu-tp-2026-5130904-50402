@@ -47,6 +47,16 @@ bool hasVertexCount(size_t count, const matveev::Polygon& polygon)
   return polygon.points.size() == count;
 }
 
+bool isLessArea(const matveev::Polygon& lhs, const matveev::Polygon& rhs)
+{
+  return matveev::getPolygonArea(lhs) < matveev::getPolygonArea(rhs);
+}
+
+bool isLessVertexes(const matveev::Polygon& lhs, const matveev::Polygon& rhs)
+{
+  return lhs.points.size() < rhs.points.size();
+}
+
 double getArea(const matveev::Polygon& polygon)
 {
   return matveev::getPolygonArea(polygon);
@@ -148,6 +158,50 @@ void matveev::doCount(std::ostream& out, const data_t& data, const std::string& 
   out << std::count_if(data.begin(), data.end(), std::bind(hasVertexCount, count, _1)) << '\n';
 }
 
+void matveev::doMax(std::ostream& out, const data_t& data, const std::string& arg)
+{
+  if (data.empty())
+  {
+    throw std::logic_error("empty data");
+  }
+
+  if (arg == "AREA")
+  {
+    printArea(out, getPolygonArea(*std::max_element(data.begin(), data.end(), isLessArea)));
+    return;
+  }
+
+  if (arg == "VERTEXES")
+  {
+    out << std::max_element(data.begin(), data.end(), isLessVertexes)->points.size() << '\n';
+    return;
+  }
+
+  throw std::logic_error("invalid max command");
+}
+
+void matveev::doMin(std::ostream& out, const data_t& data, const std::string& arg)
+{
+  if (data.empty())
+  {
+    throw std::logic_error("empty data");
+  }
+
+  if (arg == "AREA")
+  {
+    printArea(out, getPolygonArea(*std::min_element(data.begin(), data.end(), isLessArea)));
+    return;
+  }
+
+  if (arg == "VERTEXES")
+  {
+    out << std::min_element(data.begin(), data.end(), isLessVertexes)->points.size() << '\n';
+    return;
+  }
+
+  throw std::logic_error("invalid min command");
+}
+
 void matveev::executeCommand(
   std::ostream& out,
   const data_t& data,
@@ -166,6 +220,18 @@ void matveev::executeCommand(
     if (command == "COUNT")
     {
       doCount(out, data, arg);
+      return;
+    }
+
+    if (command == "MAX")
+    {
+      doMax(out, data, arg);
+      return;
+    }
+
+    if (command == "MIN")
+    {
+      doMin(out, data, arg);
       return;
     }
 

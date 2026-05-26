@@ -67,7 +67,7 @@ public:
     return *this;
   }
 
-  CommandOutputIterator& operator++(int)
+  CommandOutputIterator operator++(int)
   {
     return *this;
   }
