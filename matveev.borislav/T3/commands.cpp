@@ -122,3 +122,26 @@ void matveev::doArea(std::ostream& out, const data_t& data, const std::string& a
   std::copy_if(data.begin(), data.end(), std::back_inserter(selected), std::bind(hasVertexCount, count, _1));
   printArea(out, getAreaSum(selected));
 }
+
+void matveev::executeCommand(
+  std::ostream& out,
+  const data_t& data,
+  const std::string& command,
+  const std::string& arg
+)
+{
+  try
+  {
+    if (command == "AREA")
+    {
+      doArea(out, data, arg);
+      return;
+    }
+
+    out << "<INVALID COMMAND>\n";
+  }
+  catch (const std::exception&)
+  {
+    out << "<INVALID COMMAND>\n";
+  }
+}
