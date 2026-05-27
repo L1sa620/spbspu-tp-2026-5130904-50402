@@ -26,13 +26,27 @@ Command::Command():
 std::istream& operator>>(std::istream& in, Command& command)
 {
   Command input;
-  in >> input.name >> input.arg;
+  in >> input.name;
 
-  if (in)
+  if (!in)
   {
-    command = input;
+    return in;
   }
 
+  std::getline(in, input.arg);
+
+  size_t first_symbol = input.arg.find_first_not_of(' ');
+
+  if (first_symbol == std::string::npos)
+  {
+    input.arg.clear();
+  }
+  else
+  {
+    input.arg.erase(0, first_symbol);
+  }
+
+  command = input;
   return in;
 }
 }

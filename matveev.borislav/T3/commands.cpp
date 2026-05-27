@@ -8,6 +8,7 @@
 #include <numeric>
 #include <ostream>
 #include <stdexcept>
+#include <sstream>
 
 namespace
 {
@@ -55,6 +56,22 @@ bool isLessArea(const matveev::Polygon& lhs, const matveev::Polygon& rhs)
 bool isLessVertexes(const matveev::Polygon& lhs, const matveev::Polygon& rhs)
 {
   return lhs.points.size() < rhs.points.size();
+}
+
+matveev::Polygon readPolygonFromString(const std::string& text)
+{
+  std::istringstream input(text);
+  matveev::Polygon polygon;
+
+  input >> polygon;
+  input >> std::ws;
+
+  if (!input || !input.eof())
+  {
+    throw std::logic_error("invalid polygon");
+  }
+
+  return polygon;
 }
 
 double getArea(const matveev::Polygon& polygon)
@@ -202,6 +219,26 @@ void matveev::doMin(std::ostream& out, const data_t& data, const std::string& ar
   throw std::logic_error("invalid min command");
 }
 
+void matveev::doInFrame(std::ostream& out, const data_t& data, const std::string& arg)
+{
+  if (data.empty())
+  {
+    throw std::logic_error("empty data");
+  }
+
+  Polygon polygon = readPolygonFromString(arg);
+  Frame frame = getFrame(data);
+
+  if (isPolygonInFrame(frame, polygon))
+  {
+    out << "<TRUE>\n";
+  }
+  else
+  {
+    out << "<FALSE>\n";
+  }
+}
+
 void matveev::executeCommand(
   std::ostream& out,
   const data_t& data,
@@ -232,6 +269,12 @@ void matveev::executeCommand(
     if (command == "MIN")
     {
       doMin(out, data, arg);
+      return;
+    }
+
+    if (command == "INFRAME")
+    {
+      doInFrame(out, data, arg);
       return;
     }
 
