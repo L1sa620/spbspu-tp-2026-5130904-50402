@@ -16,6 +16,16 @@ struct Frame
 double getTriangleArea(const Point& first, const Point& second, const Point& third);
 double getPolygonArea(const Polygon& polygon);
 
+struct Edge
+{
+  Point first;
+  Point second;
+};
+
+std::vector< Edge > getEdges(const Polygon& polygon);
+bool isSegmentsIntersect(const Edge& first, const Edge& second);
+bool isPolygonIntersect(const Polygon& first, const Polygon& second);
+
 Frame getFrame(const Polygon& polygon);
 Frame getFrame(const std::vector< Polygon >& polygons);
 bool isPointInFrame(const Frame& frame, const Point& point);

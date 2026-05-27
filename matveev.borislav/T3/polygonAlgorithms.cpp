@@ -4,9 +4,9 @@
 #include <cmath>
 #include <iterator>
 #include <numeric>
+#include <stdexcept>
 #include <vector>
 #include <functional>
-#include <stdexcept>
 
 namespace
 {
@@ -34,7 +34,34 @@ private:
   const matveev::Point& base_;
   std::vector< matveev::Point >::const_iterator current_;
 };
-}
+
+class EdgeGenerator
+{
+public:
+  EdgeGenerator(const std::vector< matveev::Point >& points):
+    points_(points),
+    index_(0)
+  {}
+
+  matveev::Edge operator()()
+  {
+    size_t next_index = index_ + 1;
+
+    if (next_index == points_.size())
+    {
+      next_index = 0;
+    }
+
+    matveev::Edge edge = { points_[index_], points_[next_index] };
+    ++index_;
+
+    return edge;
+  }
+
+private:
+  const std::vector< matveev::Point >& points_;
+  size_t index_;
+};
 
 bool isLessX(const matveev::Point& lhs, const matveev::Point& rhs)
 {
@@ -64,6 +91,55 @@ bool isLessFrameRightX(const matveev::Frame& lhs, const matveev::Frame& rhs)
 bool isLessFrameTopY(const matveev::Frame& lhs, const matveev::Frame& rhs)
 {
   return lhs.right_top.y < rhs.right_top.y;
+}
+
+long long getOrientation(
+  const matveev::Point& first,
+  const matveev::Point& second,
+  const matveev::Point& third
+)
+{
+  long long first_x = second.x - first.x;
+  long long first_y = second.y - first.y;
+  long long second_x = third.x - first.x;
+  long long second_y = third.y - first.y;
+
+  return first_x * second_y - first_y * second_x;
+}
+
+bool isBetween(int left, int value, int right)
+{
+  return value >= std::min(left, right) && value <= std::max(left, right);
+}
+
+bool isPointOnSegment(const matveev::Edge& edge, const matveev::Point& point)
+{
+  return getOrientation(edge.first, edge.second, point) == 0
+    && isBetween(edge.first.x, point.x, edge.second.x)
+    && isBetween(edge.first.y, point.y, edge.second.y);
+}
+
+bool isEdgeIntersectWith(const matveev::Edge& first, const matveev::Edge& second)
+{
+  return matveev::isSegmentsIntersect(first, second);
+}
+
+class IntersectWithEdges
+{
+public:
+  explicit IntersectWithEdges(const std::vector< matveev::Edge >& edges):
+    edges_(edges)
+  {}
+
+  bool operator()(const matveev::Edge& edge) const
+  {
+    using namespace std::placeholders;
+    return std::any_of(edges_.begin(), edges_.end(), std::bind(isEdgeIntersectWith, edge, _1));
+  }
+
+private:
+  const std::vector< matveev::Edge >& edges_;
+};
 }
 
 double matveev::getTriangleArea(const Point& first, const Point& second, const Point& third)
@@ -155,4 +231,53 @@ bool matveev::isPolygonInFrame(const Frame& frame, const Polygon& polygon)
 {
   using namespace std::placeholders;
   return std::all_of(polygon.points.begin(), polygon.points.end(), std::bind(isPointInFrame, frame, _1));
+}
+
+std::vector< matveev::Edge > matveev::getEdges(const Polygon& polygon)
+{
+  std::vector< Edge > edges;
+  edges.reserve(polygon.points.size());
+
+  std::generate_n(std::back_inserter(edges), polygon.points.size(), EdgeGenerator(polygon.points));
+
+  return edges;
+}
+
+bool matveev::isSegmentsIntersect(const Edge& first, const Edge& second)
+{
+  long long first_orientation = getOrientation(first.first, first.second, second.first);
+  long long second_orientation = getOrientation(first.first, first.second, second.second);
+  long long third_orientation = getOrientation(second.first, second.second, first.first);
+  long long fourth_orientation = getOrientation(second.first, second.second, first.second);
+
+  if (first_orientation == 0 && isPointOnSegment(first, second.first))
+  {
+    return true;
+  }
+
+  if (second_orientation == 0 && isPointOnSegment(first, second.second))
+  {
+    return true;
+  }
+
+  if (third_orientation == 0 && isPointOnSegment(second, first.first))
+  {
+    return true;
+  }
+
+  if (fourth_orientation == 0 && isPointOnSegment(second, first.second))
+  {
+    return true;
+  }
+
+  return (first_orientation > 0) != (second_orientation > 0)
+    && (third_orientation > 0) != (fourth_orientation > 0);
+}
+
+bool matveev::isPolygonIntersect(const Polygon& first, const Polygon& second)
+{
+  std::vector< Edge > first_edges = getEdges(first);
+  std::vector< Edge > second_edges = getEdges(second);
+
+  return std::any_of(first_edges.begin(), first_edges.end(), IntersectWithEdges(second_edges));
 }
