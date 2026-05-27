@@ -58,6 +58,11 @@ bool isLessVertexes(const matveev::Polygon& lhs, const matveev::Polygon& rhs)
   return lhs.points.size() < rhs.points.size();
 }
 
+bool isIntersectWith(const matveev::Polygon& target, const matveev::Polygon& polygon)
+{
+  return matveev::isPolygonIntersect(target, polygon);
+}
+
 matveev::Polygon readPolygonFromString(const std::string& text)
 {
   std::istringstream input(text);
@@ -239,6 +244,14 @@ void matveev::doInFrame(std::ostream& out, const data_t& data, const std::string
   }
 }
 
+void matveev::doIntersections(std::ostream& out, const data_t& data, const std::string& arg)
+{
+  Polygon polygon = readPolygonFromString(arg);
+
+  using namespace std::placeholders;
+  out << std::count_if(data.begin(), data.end(), std::bind(isIntersectWith, polygon, _1)) << '\n';
+}
+
 void matveev::executeCommand(
   std::ostream& out,
   const data_t& data,
@@ -275,6 +288,12 @@ void matveev::executeCommand(
     if (command == "INFRAME")
     {
       doInFrame(out, data, arg);
+      return;
+    }
+
+    if (command == "INTERSECTIONS")
+    {
+      doIntersections(out, data, arg);
       return;
     }
 
