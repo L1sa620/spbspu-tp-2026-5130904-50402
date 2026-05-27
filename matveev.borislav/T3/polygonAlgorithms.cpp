@@ -46,19 +46,24 @@ bool isLessY(const matveev::Point& lhs, const matveev::Point& rhs)
   return lhs.y < rhs.y;
 }
 
-matveev::Point getLeftBottom(const matveev::Frame& frame)
+bool isLessFrameLeftX(const matveev::Frame& lhs, const matveev::Frame& rhs)
 {
-  return frame.left_bottom;
+  return lhs.left_bottom.x < rhs.left_bottom.x;
 }
 
-matveev::Point getRightTop(const matveev::Frame& frame)
+bool isLessFrameBottomY(const matveev::Frame& lhs, const matveev::Frame& rhs)
 {
-  return frame.right_top;
+  return lhs.left_bottom.y < rhs.left_bottom.y;
 }
 
-void copyPoints(const matveev::Polygon& polygon, std::vector< matveev::Point >& points)
+bool isLessFrameRightX(const matveev::Frame& lhs, const matveev::Frame& rhs)
 {
-  std::copy(polygon.points.begin(), polygon.points.end(), std::back_inserter(points));
+  return lhs.right_top.x < rhs.right_top.x;
+}
+
+bool isLessFrameTopY(const matveev::Frame& lhs, const matveev::Frame& rhs)
+{
+  return lhs.right_top.y < rhs.right_top.y;
 }
 
 double matveev::getTriangleArea(const Point& first, const Point& second, const Point& third)
@@ -115,13 +120,27 @@ matveev::Frame matveev::getFrame(const std::vector< Polygon >& polygons)
     throw std::logic_error("empty polygons");
   }
 
-  std::vector< Point > points;
-  std::for_each(polygons.begin(), polygons.end(), std::bind(copyPoints, std::placeholders::_1, std::ref(points)));
+  std::vector< Frame > frames;
+  frames.reserve(polygons.size());
 
-  Polygon polygon;
-  polygon.points = points;
+  std::transform(
+    polygons.begin(),
+    polygons.end(),
+    std::back_inserter(frames),
+    static_cast< Frame(*)(const Polygon&) >(getFrame)
+  );
 
-  return getFrame(polygon);
+  std::vector< Frame >::const_iterator min_x = std::min_element(frames.begin(), frames.end(), isLessFrameLeftX);
+  std::vector< Frame >::const_iterator min_y = std::min_element(frames.begin(), frames.end(), isLessFrameBottomY);
+  std::vector< Frame >::const_iterator max_x = std::max_element(frames.begin(), frames.end(), isLessFrameRightX);
+  std::vector< Frame >::const_iterator max_y = std::max_element(frames.begin(), frames.end(), isLessFrameTopY);
+
+  Frame frame = {
+    Point(min_x->left_bottom.x, min_y->left_bottom.y),
+    Point(max_x->right_top.x, max_y->right_top.y)
+  };
+
+  return frame;
 }
 
 bool matveev::isPointInFrame(const Frame& frame, const Point& point)
