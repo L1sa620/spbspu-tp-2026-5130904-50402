@@ -5,6 +5,7 @@
 #include <istream>
 #include <iterator>
 #include <stdexcept>
+#include <sstream>
 
 namespace
 {
@@ -104,4 +105,25 @@ std::istream& matveev::operator>>(std::istream& in, Polygon& polygon)
   }
 
   return in;
+}
+
+matveev::Line::Line():
+  value()
+{}
+
+std::istream& matveev::operator>>(std::istream& in, Line& line)
+{
+  line.value.clear();
+  std::getline(in >> std::ws, line.value);
+  return in;
+}
+
+bool matveev::readPolygonFromLine(const Line& line, Polygon& polygon)
+{
+  std::istringstream input(line.value);
+
+  input >> polygon;
+  input >> std::ws;
+
+  return input && input.eof();
 }

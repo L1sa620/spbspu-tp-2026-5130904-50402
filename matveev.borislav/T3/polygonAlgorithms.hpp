@@ -25,6 +25,8 @@ struct Edge
 std::vector< Edge > getEdges(const Polygon& polygon);
 bool isSegmentsIntersect(const Edge& first, const Edge& second);
 bool isPolygonIntersect(const Polygon& first, const Polygon& second);
+bool isPointInPolygon(const Point& point, const Polygon& polygon);
+bool isPointOnPolygon(const Point& point, const Polygon& polygon);
 
 Frame getFrame(const Polygon& polygon);
 Frame getFrame(const std::vector< Polygon >& polygons);

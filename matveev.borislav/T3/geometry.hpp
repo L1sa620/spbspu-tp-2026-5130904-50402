@@ -3,6 +3,7 @@
 
 #include <iosfwd>
 #include <vector>
+#include <string>
 
 namespace matveev
 {
@@ -22,8 +23,18 @@ struct Polygon
   std::vector< Point > points;
 };
 
+struct Line
+{
+  Line();
+
+  std::string value;
+};
+
 std::istream& operator>>(std::istream& in, Point& point);
 std::istream& operator>>(std::istream& in, Polygon& polygon);
+std::istream& operator>>(std::istream& in, Line& line);
+
+bool readPolygonFromLine(const Line& line, Polygon& polygon);
 }
 
 #endif

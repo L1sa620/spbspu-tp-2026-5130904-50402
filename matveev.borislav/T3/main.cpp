@@ -91,6 +91,50 @@ private:
   const matveev::data_t& data_;
 };
 
+class PolygonOutputIterator
+{
+public:
+  using iterator_category = std::output_iterator_tag;
+  using value_type = void;
+  using difference_type = void;
+  using pointer = void;
+  using reference = void;
+
+  explicit PolygonOutputIterator(matveev::data_t& data):
+    data_(data)
+  {}
+
+  PolygonOutputIterator& operator=(const matveev::Line& line)
+  {
+    matveev::Polygon polygon;
+
+    if (matveev::readPolygonFromLine(line, polygon))
+    {
+      data_.push_back(polygon);
+    }
+
+    return *this;
+  }
+
+  PolygonOutputIterator& operator*()
+  {
+    return *this;
+  }
+
+  PolygonOutputIterator& operator++()
+  {
+    return *this;
+  }
+
+  PolygonOutputIterator operator++(int)
+  {
+    return *this;
+  }
+
+private:
+  matveev::data_t& data_;
+};
+
 int main(int argc, char* argv[])
 {
   if (argc != 2)
@@ -108,8 +152,8 @@ int main(int argc, char* argv[])
   }
 
   matveev::data_t polygons;
-  using polygon_input_t = std::istream_iterator< matveev::Polygon >;
-  std::copy(polygon_input_t{ input }, polygon_input_t{}, std::back_inserter(polygons));
+  using line_input_t = std::istream_iterator< matveev::Line >;
+  std::copy(line_input_t{ input }, line_input_t{}, PolygonOutputIterator(polygons));
   std::vector< Command > commands;
   using command_input_t = std::istream_iterator< Command >;
   std::copy(command_input_t{ std::cin }, command_input_t{}, std::back_inserter(commands));

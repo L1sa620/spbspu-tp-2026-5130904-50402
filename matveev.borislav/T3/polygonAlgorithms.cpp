@@ -142,6 +142,72 @@ private:
 };
 }
 
+class PointOnEdge
+{
+public:
+  explicit PointOnEdge(const matveev::Point& point):
+    point_(point)
+  {}
+
+  bool operator()(const matveev::Edge& edge) const
+  {
+    return isPointOnSegment(edge, point_);
+  }
+
+private:
+  const matveev::Point& point_;
+};
+
+class RayCrossCounter
+{
+public:
+  explicit RayCrossCounter(const matveev::Point& point):
+    point_(point)
+  {}
+
+  bool operator()(const matveev::Edge& edge) const
+  {
+    const matveev::Point& first = edge.first;
+    const matveev::Point& second = edge.second;
+
+    bool crosses_y = (first.y > point_.y) != (second.y > point_.y);
+
+    if (!crosses_y)
+    {
+      return false;
+    }
+
+    long long x = static_cast< long long >(second.x - first.x) * (point_.y - first.y);
+    long long y = static_cast< long long >(second.y - first.y) * (point_.x - first.x);
+
+    if (second.y > first.y)
+    {
+      return x > y;
+    }
+
+    return x < y;
+  }
+
+private:
+  const matveev::Point& point_;
+};
+
+class PointInsidePolygon
+{
+public:
+  explicit PointInsidePolygon(const matveev::Polygon& polygon):
+    polygon_(polygon)
+  {}
+
+  bool operator()(const matveev::Point& point) const
+  {
+    return matveev::isPointInPolygon(point, polygon_);
+  }
+
+private:
+  const matveev::Polygon& polygon_;
+};
+
 double matveev::getTriangleArea(const Point& first, const Point& second, const Point& third)
 {
   long long first_x = second.x - first.x;
@@ -279,5 +345,38 @@ bool matveev::isPolygonIntersect(const Polygon& first, const Polygon& second)
   std::vector< Edge > first_edges = getEdges(first);
   std::vector< Edge > second_edges = getEdges(second);
 
-  return std::any_of(first_edges.begin(), first_edges.end(), IntersectWithEdges(second_edges));
+  bool has_intersected_edges = std::any_of(first_edges.begin(), first_edges.end(), IntersectWithEdges(second_edges));
+
+  bool first_inside_second = std::any_of(
+    first.points.begin(),
+    first.points.end(),
+    PointInsidePolygon(second)
+  );
+
+  bool second_inside_first = std::any_of(
+    second.points.begin(),
+    second.points.end(),
+    PointInsidePolygon(first)
+  );
+
+  return has_intersected_edges || first_inside_second || second_inside_first;
+}
+
+bool matveev::isPointOnPolygon(const Point& point, const Polygon& polygon)
+{
+  std::vector< Edge > edges = getEdges(polygon);
+  return std::any_of(edges.begin(), edges.end(), PointOnEdge(point));
+}
+
+bool matveev::isPointInPolygon(const Point& point, const Polygon& polygon)
+{
+  if (isPointOnPolygon(point, polygon))
+  {
+    return true;
+  }
+
+  std::vector< Edge > edges = getEdges(polygon);
+  size_t count = std::count_if(edges.begin(), edges.end(), RayCrossCounter(point));
+
+  return count % 2 == 1;
 }
