@@ -1,74 +1,122 @@
 #include "commands.hpp"
-#include <algorithm>
+#include <cstddef>
 #include <iomanip>
+#include <iterator>
 #include <stdexcept>
 
 namespace
 {
-  std::string readArg(std::istream& in)
+  void printJoined(std::ostream& out, const std::vector< std::string >& items)
   {
-    std::string arg;
-    if (!(in >> arg))
+    if (!items.empty())
     {
-      throw std::logic_error("missing argument");
+      out << items.front();
+      for (auto it = std::next(items.cbegin()); it != items.cend(); ++it)
+      {
+        out << "\n" << *it;
+      }
     }
-    return arg;
+    out << "\n";
   }
 
-  std::shared_ptr< matveev::Note >& findNote(const std::string& name, matveev::db_t& db)
+  bool searchLoop(const std::shared_ptr< matveev::Note >& start,
+    const std::shared_ptr< matveev::Note >& current, std::size_t maxNotes,
+    std::vector< std::shared_ptr< matveev::Note > >& path)
   {
-    auto it = db.find(name);
-    if (it == db.end())
+    std::size_t intermediates = path.size() - 1;
+    for (auto it = current->links.cbegin(); it != current->links.cend(); ++it)
     {
-      throw std::logic_error("note not found");
+      std::shared_ptr< matveev::Note > next = it->second.lock();
+      if (next == nullptr)
+      {
+        continue;
+      }
+      if (next == start)
+      {
+        if (intermediates >= 1)
+        {
+          return true;
+        }
+        continue;
+      }
+      if (intermediates >= maxNotes)
+      {
+        continue;
+      }
+      bool onPath = false;
+      for (auto visited = path.cbegin(); visited != path.cend(); ++visited)
+      {
+        if (*visited == next)
+        {
+          onPath = true;
+          break;
+        }
+      }
+      if (onPath)
+      {
+        continue;
+      }
+      path.push_back(next);
+      if (searchLoop(start, next, maxNotes, path))
+      {
+        return true;
+      }
+      path.pop_back();
     }
-    return it->second;
+    return false;
   }
 }
 
 void matveev::create_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string name = readArg(in);
-  if (db.count(name))
+  std::string name;
+  if (!(in >> name))
+  {
+    return;
+  }
+  if (db.count(name) != 0)
   {
     throw std::logic_error("note already exists");
   }
-  auto note = std::make_shared< Note >();
+  std::shared_ptr< Note > note = std::make_shared< Note >();
   note->name = name;
-  db[name] = note;
+  db.emplace(name, note);
 }
 
 void matveev::add_line(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string name = readArg(in);
+  std::string name;
+  if (!(in >> name))
+  {
+    return;
+  }
   std::string text;
   if (!(in >> std::quoted(text)))
   {
-    throw std::logic_error("missing quoted text");
+    return;
   }
-  auto& note = findNote(name, db);
-  note->lines.push_back(text);
+  db.at(name)->lines.push_back(text);
 }
 
 void matveev::show_note(std::istream& in, std::ostream& out, db_t& db)
 {
-  std::string name = readArg(in);
-  auto& note = findNote(name, db);
-  if (note->lines.empty())
+  std::string name;
+  if (!(in >> name))
   {
-    out << "\n";
     return;
   }
-  for (const auto& line : note->lines)
-  {
-    out << line << "\n";
-  }
+  const std::shared_ptr< Note >& note = db.at(name);
+  printJoined(out, note->lines);
 }
 
 void matveev::drop_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string name = readArg(in);
-  if (!db.erase(name))
+  std::string name;
+  if (!(in >> name))
+  {
+    return;
+  }
+  if (db.erase(name) == 0)
   {
     throw std::logic_error("note not found");
   }
@@ -76,72 +124,80 @@ void matveev::drop_note(std::istream& in, std::ostream&, db_t& db)
 
 void matveev::link_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string from = readArg(in);
-  std::string to = readArg(in);
-  auto& note_from = findNote(from, db);
-  auto& note_to = findNote(to, db);
-  auto& links = note_from->links;
-  auto dup = std::find_if(links.begin(), links.end(),
-    [&note_to](const std::pair< std::string, std::weak_ptr< Note > >& p)
-    {
-      auto locked = p.second.lock();
-      return locked && locked == note_to;
-    }
-  );
-  if (dup != links.end())
+  std::string from;
+  std::string to;
+  if (!(in >> from) || !(in >> to))
   {
-    throw std::logic_error("link already exists");
+    return;
   }
-  links.push_back({to, note_to});
+  std::shared_ptr< Note >& noteFrom = db.at(from);
+  std::shared_ptr< Note >& noteTo = db.at(to);
+  for (auto it = noteFrom->links.cbegin(); it != noteFrom->links.cend(); ++it)
+  {
+    std::shared_ptr< Note > locked = it->second.lock();
+    if (locked != nullptr && locked == noteTo)
+    {
+      throw std::logic_error("link already exists");
+    }
+  }
+  noteFrom->links.push_back({ to, noteTo });
 }
 
 void matveev::mind_note(std::istream& in, std::ostream& out, db_t& db)
 {
-  std::string name = readArg(in);
-  auto& note = findNote(name, db);
-  bool printed = false;
-  for (const auto& link : note->links)
+  std::string name;
+  if (!(in >> name))
   {
-    if (auto locked = link.second.lock())
+    return;
+  }
+  const std::shared_ptr< Note >& note = db.at(name);
+  std::vector< std::string > names;
+  for (auto it = note->links.cbegin(); it != note->links.cend(); ++it)
+  {
+    if (!it->second.expired())
     {
-      out << locked->name << "\n";
-      printed = true;
+      names.push_back(it->first);
     }
   }
-  if (!printed)
-  {
-    out << "\n";
-  }
+  printJoined(out, names);
 }
 
 void matveev::halt_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string from = readArg(in);
-  std::string to = readArg(in);
-  auto& note = findNote(from, db);
-  findNote(to, db);
-  auto& links = note->links;
-  auto found = std::find_if(links.begin(), links.end(),
-    [&to](const std::pair< std::string, std::weak_ptr< Note > >& p)
-    {
-      return p.first == to;
-    }
-  );
-  if (found == links.end())
+  std::string from;
+  std::string to;
+  if (!(in >> from) || !(in >> to))
   {
-    throw std::logic_error("link not found");
+    return;
   }
-  links.erase(found);
+  std::shared_ptr< Note >& noteFrom = db.at(from);
+  if (db.count(to) == 0)
+  {
+    throw std::logic_error("note not found");
+  }
+  for (auto it = noteFrom->links.begin(); it != noteFrom->links.end(); ++it)
+  {
+    if (it->first == to)
+    {
+      noteFrom->links.erase(it);
+      return;
+    }
+  }
+  throw std::logic_error("link not found");
 }
 
 void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
 {
-  std::string name = readArg(in);
-  auto& note = findNote(name, db);
-  size_t count = 0;
-  for (const auto& link : note->links)
+  std::string name;
+  if (!(in >> name))
   {
-    if (link.second.expired())
+    return;
+  }
+  const std::shared_ptr< Note >& note = db.at(name);
+  std::size_t count = 0;
+  for (auto it = note->links.cbegin(); it != note->links.cend(); ++it)
+  {
+    if (it->second.expired())
     {
       ++count;
     }
@@ -151,29 +207,47 @@ void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
 
 void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
 {
-  std::string name = readArg(in);
-  auto& note = findNote(name, db);
-  auto& links = note->links;
-  auto new_end = std::remove_if(links.begin(), links.end(),
-    [](const std::pair< std::string, std::weak_ptr< Note > >& p)
+  std::string name;
+  if (!(in >> name))
+  {
+    return;
+  }
+  std::shared_ptr< Note >& note = db.at(name);
+  for (auto it = note->links.begin(); it != note->links.end(); )
+  {
+    if (it->second.expired())
     {
-      return p.second.expired();
+      it = note->links.erase(it);
     }
-  );
-  links.erase(new_end, links.end());
+    else
+    {
+      ++it;
+    }
+  }
 }
 
-matveev::cmd_map_t matveev::initCommands()
+void matveev::loop_note(std::istream& in, std::ostream& out, db_t& db)
 {
-  cmd_map_t cmds;
-  cmds["note"] = create_note;
-  cmds["line"] = add_line;
-  cmds["show"] = show_note;
-  cmds["drop"] = drop_note;
-  cmds["link"] = link_note;
-  cmds["mind"] = mind_note;
-  cmds["halt"] = halt_note;
-  cmds["expired"] = expired_note;
-  cmds["refresh"] = refresh_note;
-  return cmds;
+  std::string from;
+  std::string lengthStr;
+  if (!(in >> from) || !(in >> lengthStr))
+  {
+    return;
+  }
+  std::size_t maxNotes = std::stoull(lengthStr);
+  std::shared_ptr< Note > start = db.at(from);
+  std::vector< std::shared_ptr< Note > > path;
+  path.push_back(start);
+  if (!searchLoop(start, start, maxNotes, path))
+  {
+    out << "<NO LOOP>\n";
+    return;
+  }
+  std::vector< std::string > edges;
+  for (auto it = path.cbegin(); std::next(it) != path.cend(); ++it)
+  {
+    edges.push_back((*it)->name + " " + (*std::next(it))->name);
+  }
+  edges.push_back(path.back()->name + " " + start->name);
+  printJoined(out, edges);
 }
