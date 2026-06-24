@@ -2,12 +2,12 @@
 #include <limits>
 #include <string>
 #include "commands.hpp"
- 
+
 int main()
 {
 matveev::db_t db;
 auto cmds = matveev::initCommands();
- 
+
 std::string cmd;
 while (std::cin >> cmd)
 {
@@ -22,6 +22,6 @@ std::cin.ignore(std::numeric_limits< std::streamsize >::max(), '\n');
 }
 std::cout << "\n";
 }
- 
+
 return 0;
 }
