@@ -8,15 +8,15 @@ namespace
 {
   void printJoined(std::ostream& out, const std::vector< std::string >& items)
   {
-    if (items.empty())
+    if (!items.empty())
     {
-      return;
+      out << items.front();
+      for (auto it = std::next(items.cbegin()); it != items.cend(); ++it)
+      {
+        out << "\n" << *it;
+      }
     }
-    out << items.front();
-    for (auto it = std::next(items.cbegin()); it != items.cend(); ++it)
-    {
-      out << "\n" << *it;
-    }
+    out << "\n";
   }
 
   bool searchLoop(const std::shared_ptr< matveev::Note >& start,
@@ -202,7 +202,7 @@ void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
       ++count;
     }
   }
-  out << count;
+  out << count << "\n";
 }
 
 void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
@@ -239,7 +239,7 @@ void matveev::loop_note(std::istream& in, std::ostream& out, db_t& db)
   path.push_back(start);
   if (!searchLoop(start, start, maxNotes, path))
   {
-    out << "<NO LOOP>";
+    out << "<NO LOOP>\n";
     return;
   }
   std::vector< std::string > edges;

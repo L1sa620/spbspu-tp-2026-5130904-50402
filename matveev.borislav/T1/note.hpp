@@ -1,5 +1,5 @@
-#ifndef NOTE_HPP
-#define NOTE_HPP
+#ifndef MATVEEV_NOTE_HPP
+#define MATVEEV_NOTE_HPP
 
 #include <memory>
 #include <string>
