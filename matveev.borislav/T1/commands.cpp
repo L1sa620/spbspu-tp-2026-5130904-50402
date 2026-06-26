@@ -106,7 +106,6 @@ void matveev::show_note(std::istream& in, std::ostream& out, db_t& db)
   }
   const std::shared_ptr< Note >& note = db.at(name);
   printJoined(out, note->lines);
-  out << "\n";
 }
 
 void matveev::drop_note(std::istream& in, std::ostream&, db_t& db)
@@ -160,7 +159,6 @@ void matveev::mind_note(std::istream& in, std::ostream& out, db_t& db)
     }
   }
   printJoined(out, names);
-  out << "\n";
 }
 
 void matveev::halt_note(std::istream& in, std::ostream&, db_t& db)
@@ -203,7 +201,7 @@ void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
       ++count;
     }
   }
-  out << count << "\n";
+  out << count;
 }
 
 void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
@@ -240,7 +238,7 @@ void matveev::loop_note(std::istream& in, std::ostream& out, db_t& db)
   path.push_back(start);
   if (!searchLoop(start, start, maxNotes, path))
   {
-    out << "<NO LOOP>\n";
+    out << "<NO LOOP>";
     return;
   }
   std::vector< std::string > edges;
@@ -250,7 +248,6 @@ void matveev::loop_note(std::istream& in, std::ostream& out, db_t& db)
   }
   edges.push_back(path.back()->name + " " + start->name);
   printJoined(out, edges);
-  out << "\n";
 }
 
 matveev::cmd_map_t matveev::initCommands()
