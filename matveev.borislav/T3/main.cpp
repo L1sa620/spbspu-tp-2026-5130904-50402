@@ -1,139 +1,14 @@
-#include "commands.hpp"
-#include "geometry.hpp"
-
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <iterator>
+#include <limits>
+#include <map>
 #include <string>
-#include <vector>
 
-namespace
-{
-struct Command
-{
-  Command();
-
-  std::string name;
-  std::string arg;
-};
-
-Command::Command():
-  name(),
-  arg()
-{}
-
-std::istream& operator>>(std::istream& in, Command& command)
-{
-  Command input;
-  in >> input.name;
-
-  if (!in)
-  {
-    return in;
-  }
-
-  std::getline(in, input.arg);
-
-  size_t first_symbol = input.arg.find_first_not_of(' ');
-
-  if (first_symbol == std::string::npos)
-  {
-    input.arg.clear();
-  }
-  else
-  {
-    input.arg.erase(0, first_symbol);
-  }
-
-  command = input;
-  return in;
-}
-}
-
-class CommandOutputIterator
-{
-public:
-  using iterator_category = std::output_iterator_tag;
-  using value_type = void;
-  using difference_type = void;
-  using pointer = void;
-  using reference = void;
-
-  CommandOutputIterator(std::ostream& out, const matveev::data_t& data):
-    out_(out),
-    data_(data)
-  {}
-
-  CommandOutputIterator& operator=(const Command& command)
-  {
-    matveev::executeCommand(out_, data_, command.name, command.arg);
-    return *this;
-  }
-
-  CommandOutputIterator& operator*()
-  {
-    return *this;
-  }
-
-  CommandOutputIterator& operator++()
-  {
-    return *this;
-  }
-
-  CommandOutputIterator operator++(int)
-  {
-    return *this;
-  }
-
-private:
-  std::ostream& out_;
-  const matveev::data_t& data_;
-};
-
-class PolygonOutputIterator
-{
-public:
-  using iterator_category = std::output_iterator_tag;
-  using value_type = void;
-  using difference_type = void;
-  using pointer = void;
-  using reference = void;
-
-  explicit PolygonOutputIterator(matveev::data_t& data):
-    data_(data)
-  {}
-
-  PolygonOutputIterator& operator=(const matveev::Line& line)
-  {
-    matveev::Polygon polygon;
-
-    if (matveev::readPolygonFromLine(line, polygon))
-    {
-      data_.push_back(polygon);
-    }
-
-    return *this;
-  }
-
-  PolygonOutputIterator& operator*()
-  {
-    return *this;
-  }
-
-  PolygonOutputIterator& operator++()
-  {
-    return *this;
-  }
-
-  PolygonOutputIterator operator++(int)
-  {
-    return *this;
-  }
-
-private:
-  matveev::data_t& data_;
-};
+#include "commands.hpp"
+#include "geometry.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -152,12 +27,45 @@ int main(int argc, char* argv[])
   }
 
   matveev::data_t polygons;
-  using line_input_t = std::istream_iterator< matveev::Line >;
-  std::copy(line_input_t{ input }, line_input_t{}, PolygonOutputIterator(polygons));
-  std::vector< Command > commands;
-  using command_input_t = std::istream_iterator< Command >;
-  std::copy(command_input_t{ std::cin }, command_input_t{}, std::back_inserter(commands));
-  std::copy(commands.begin(), commands.end(), CommandOutputIterator(std::cout, polygons));
+  using input_it_t = std::istream_iterator< matveev::Polygon >;
+
+  while (!input.eof())
+  {
+    std::copy(input_it_t{ input }, input_it_t{}, std::back_inserter(polygons));
+
+    if (input.fail() && !input.eof())
+    {
+      input.clear();
+      input.ignore(std::numeric_limits< std::streamsize >::max(), '\n');
+    }
+  }
+
+  using handler_t = std::function< void(std::istream&, std::ostream&, const matveev::data_t&) >;
+  std::map< std::string, handler_t > commands;
+  commands["AREA"] = matveev::doArea;
+  commands["COUNT"] = matveev::doCount;
+  commands["MAX"] = matveev::doMax;
+  commands["MIN"] = matveev::doMin;
+  commands["INFRAME"] = matveev::doInFrame;
+  commands["INTERSECTIONS"] = matveev::doIntersections;
+
+  std::string command;
+
+  while (std::cin >> command)
+  {
+    try
+    {
+      commands.at(command)(std::cin, std::cout, polygons);
+      std::cout << "\n";
+    }
+    catch (const std::exception&)
+    {
+      std::cout << "<INVALID COMMAND>\n";
+      std::cin.clear();
+    }
+
+    std::cin.ignore(std::numeric_limits< std::streamsize >::max(), '\n');
+  }
 
   return 0;
 }

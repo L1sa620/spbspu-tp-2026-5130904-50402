@@ -1,23 +1,21 @@
-#ifndef MATVEEV_COMMANDS_HPP
-#define MATVEEV_COMMANDS_HPP
+#ifndef COMMANDS_HPP
+#define COMMANDS_HPP
+
+#include <iosfwd>
+#include <vector>
 
 #include "geometry.hpp"
 
-#include <iosfwd>
-#include <string>
-#include <vector>
-
 namespace matveev
 {
-using data_t = std::vector< Polygon >;
+  using data_t = std::vector< Polygon >;
 
-void doArea(std::ostream& out, const data_t& data, const std::string& arg);
-void doCount(std::ostream& out, const data_t& data, const std::string& arg);
-void doMax(std::ostream& out, const data_t& data, const std::string& arg);
-void doMin(std::ostream& out, const data_t& data, const std::string& arg);
-void doInFrame(std::ostream& out, const data_t& data, const std::string& arg);
-void doIntersections(std::ostream& out, const data_t& data, const std::string& arg);
-void executeCommand(std::ostream& out, const data_t& data, const std::string& command, const std::string& arg);
+  void doArea(std::istream& in, std::ostream& out, const data_t& data);
+  void doCount(std::istream& in, std::ostream& out, const data_t& data);
+  void doMax(std::istream& in, std::ostream& out, const data_t& data);
+  void doMin(std::istream& in, std::ostream& out, const data_t& data);
+  void doInFrame(std::istream& in, std::ostream& out, const data_t& data);
+  void doIntersections(std::istream& in, std::ostream& out, const data_t& data);
 }
 
 #endif

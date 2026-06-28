@@ -1,46 +1,33 @@
 #include "geometry.hpp"
-#include "ioFormat.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <istream>
 #include <iterator>
 #include <stdexcept>
-#include <sstream>
+
+#include "ioFormat.hpp"
 
 namespace
 {
-struct PointReader
-{
-  std::istream& in;
-
-  matveev::Point operator()() const
+  struct PointReader
   {
-    matveev::Point point;
-    in >> point;
+    std::istream& in;
 
-    if (!in)
+    matveev::Point operator()() const
     {
-      throw std::logic_error("invalid point");
+      matveev::Point point;
+      in >> point;
+
+      if (!in)
+      {
+        throw std::logic_error("invalid point");
+      }
+
+      return point;
     }
-
-    return point;
-  }
-};
+  };
 }
-
-matveev::Point::Point():
-  x(0),
-  y(0)
-{}
-
-matveev::Point::Point(int x_value, int y_value):
-  x(x_value),
-  y(y_value)
-{}
-
-matveev::Polygon::Polygon():
-  points()
-{}
 
 std::istream& matveev::operator>>(std::istream& in, Point& point)
 {
@@ -62,7 +49,7 @@ std::istream& matveev::operator>>(std::istream& in, Point& point)
 
   if (in)
   {
-    point = Point(x, y);
+    point = Point{ x, y };
   }
 
   return in;
@@ -77,7 +64,7 @@ std::istream& matveev::operator>>(std::istream& in, Polygon& polygon)
     return in;
   }
 
-  size_t count = 0;
+  std::size_t count = 0;
   in >> count;
 
   if (!in || count < 3)
@@ -105,25 +92,4 @@ std::istream& matveev::operator>>(std::istream& in, Polygon& polygon)
   }
 
   return in;
-}
-
-matveev::Line::Line():
-  value()
-{}
-
-std::istream& matveev::operator>>(std::istream& in, Line& line)
-{
-  line.value.clear();
-  std::getline(in >> std::ws, line.value);
-  return in;
-}
-
-bool matveev::readPolygonFromLine(const Line& line, Polygon& polygon)
-{
-  std::istringstream input(line.value);
-
-  input >> polygon;
-  input >> std::ws;
-
-  return input && input.eof();
 }
