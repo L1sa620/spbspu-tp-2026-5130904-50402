@@ -1,33 +1,20 @@
-#include "ioFormat.hpp"
-
 #include <istream>
-#include <ostream>
+#include <string>
+
+#include "ioFormat.hpp"
+#include "ioGuard.hpp"
 
 namespace
 {
-bool isUnsignedSuffix(char c)
-{
-  return c == 'u' || c == 'U';
-}
+  bool isUnsignedSuffix(char c)
+  {
+    return c == 'u' || c == 'U';
+  }
 
-bool isLongSuffix(char c)
-{
-  return c == 'l' || c == 'L';
-}
-}
-
-matveev::IOGuard::IOGuard(std::basic_ios< char >& stream):
-  stream_(stream),
-  flags_(stream.flags()),
-  fill_(stream.fill()),
-  precision_(stream.precision())
-{}
-
-matveev::IOGuard::~IOGuard()
-{
-  stream_.flags(flags_);
-  stream_.fill(fill_);
-  stream_.precision(precision_);
+  bool isLongSuffix(char c)
+  {
+    return c == 'l' || c == 'L';
+  }
 }
 
 std::istream& matveev::operator>>(std::istream& in, DelimiterIO&& dest)
@@ -59,12 +46,12 @@ std::istream& matveev::operator>>(std::istream& in, LabelIO&& dest)
     return in;
   }
 
-  for (const char* i = dest.expected; *i != '\0'; ++i)
+  for (char symbol : dest.expected)
   {
     char c = 0;
     in >> c;
 
-    if (!in || c != *i)
+    if (!in || c != symbol)
     {
       in.setstate(std::ios::failbit);
       return in;
@@ -179,22 +166,4 @@ std::istream& matveev::operator>>(std::istream& in, StringIO&& dest)
   }
 
   return in;
-}
-
-std::ostream& matveev::operator<<(std::ostream& out, const UllLitO& dest)
-{
-  out << dest.ref << "ull";
-  return out;
-}
-
-std::ostream& matveev::operator<<(std::ostream& out, const ChrLitO& dest)
-{
-  out << '\'' << dest.ref << '\'';
-  return out;
-}
-
-std::ostream& matveev::operator<<(std::ostream& out, const StringO& dest)
-{
-  out << '"' << dest.ref << '"';
-  return out;
 }
