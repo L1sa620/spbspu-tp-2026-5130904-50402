@@ -16,7 +16,6 @@ namespace
         out << "\n" << *it;
       }
     }
-    out << "\n";
   }
 
   bool searchLoop(const std::shared_ptr< matveev::Note >& start,
@@ -202,7 +201,7 @@ void matveev::expired_note(std::istream& in, std::ostream& out, db_t& db)
       ++count;
     }
   }
-  out << count << "\n";
+  out << count;
 }
 
 void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
@@ -229,18 +228,17 @@ void matveev::refresh_note(std::istream& in, std::ostream&, db_t& db)
 void matveev::loop_note(std::istream& in, std::ostream& out, db_t& db)
 {
   std::string from;
-  std::string lengthStr;
-  if (!(in >> from) || !(in >> lengthStr))
+  std::size_t maxNotes = 0;
+  if (!(in >> from) || !(in >> maxNotes))
   {
     return;
   }
-  std::size_t maxNotes = std::stoull(lengthStr);
   std::shared_ptr< Note > start = db.at(from);
   std::vector< std::shared_ptr< Note > > path;
   path.push_back(start);
   if (!searchLoop(start, start, maxNotes, path))
   {
-    out << "<NO LOOP>\n";
+    out << "<NO LOOP>";
     return;
   }
   std::vector< std::string > edges;
@@ -250,4 +248,20 @@ void matveev::loop_note(std::istream& in, std::ostream& out, db_t& db)
   }
   edges.push_back(path.back()->name + " " + start->name);
   printJoined(out, edges);
+}
+
+matveev::cmd_map_t matveev::initCommands()
+{
+  cmd_map_t cmds;
+  cmds["note"] = create_note;
+  cmds["line"] = add_line;
+  cmds["show"] = show_note;
+  cmds["drop"] = drop_note;
+  cmds["link"] = link_note;
+  cmds["mind"] = mind_note;
+  cmds["halt"] = halt_note;
+  cmds["expired"] = expired_note;
+  cmds["refresh"] = refresh_note;
+  cmds["loop"] = loop_note;
+  return cmds;
 }

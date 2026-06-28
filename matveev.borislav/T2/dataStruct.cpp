@@ -1,7 +1,5 @@
 #include "dataStruct.hpp"
 
-#include <istream>
-
 matveev::DataStruct::DataStruct():
   key1(0),
   key2(0),
@@ -17,17 +15,6 @@ matveev::DataStruct::DataStruct(
   key2(key2_value),
   key3(key3_value)
 {}
-
-matveev::Line::Line():
-  value()
-{}
-
-std::istream& matveev::operator>>(std::istream& in, Line& line)
-{
-  line.value.clear();
-  std::getline(in >> std::ws, line.value);
-  return in;
-}
 
 bool matveev::compareDataStruct(const DataStruct& lhs, const DataStruct& rhs)
 {

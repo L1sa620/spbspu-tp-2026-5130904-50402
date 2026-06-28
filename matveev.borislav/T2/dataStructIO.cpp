@@ -1,121 +1,11 @@
+#include <istream>
+#include <ostream>
+#include <string>
+
 #include "dataStructIO.hpp"
 #include "ioFormat.hpp"
 
-#include <algorithm>
-#include <array>
-#include <istream>
-#include <ostream>
-#include <sstream>
-
-namespace matveev
-{
-enum class KeyType
-{
-  invalid,
-  key1,
-  key2,
-  key3
-};
-
-struct KeyIO
-{
-  KeyType& ref;
-};
-
-struct FieldsState
-{
-  FieldsState();
-
-  bool key1;
-  bool key2;
-  bool key3;
-};
-
-FieldsState::FieldsState():
-  key1(false),
-  key2(false),
-  key3(false)
-{}
-
-bool allFieldsRead(const FieldsState& state)
-{
-  return state.key1 && state.key2 && state.key3;
-}
-
-struct FieldIO
-{
-  DataStruct& data;
-  FieldsState& state;
-};
-
-std::istream& operator>>(std::istream& in, KeyIO&& dest)
-{
-  std::istream::sentry sentry(in);
-
-  if (!sentry)
-  {
-    return in;
-  }
-
-  in >> LabelIO{ "key" };
-
-  char number = 0;
-  in >> number;
-
-  if (!in)
-  {
-    return in;
-  }
-
-  if (number == '1')
-  {
-    dest.ref = KeyType::key1;
-  }
-  else if (number == '2')
-  {
-    dest.ref = KeyType::key2;
-  }
-  else if (number == '3')
-  {
-    dest.ref = KeyType::key3;
-  }
-  else
-  {
-    in.setstate(std::ios::failbit);
-  }
-
-  return in;
-}
-
-std::istream& operator>>(std::istream& in, FieldIO&& dest)
-{
-  KeyType key = KeyType::invalid;
-  in >> KeyIO{ key };
-
-  if (key == KeyType::key1 && !dest.state.key1)
-  {
-    in >> UllLitIO{ dest.data.key1 };
-    dest.state.key1 = true;
-  }
-  else if (key == KeyType::key2 && !dest.state.key2)
-  {
-    in >> ChrLitIO{ dest.data.key2 };
-    dest.state.key2 = true;
-  }
-  else if (key == KeyType::key3 && !dest.state.key3)
-  {
-    in >> StringIO{ dest.data.key3 };
-    dest.state.key3 = true;
-  }
-  else
-  {
-    in.setstate(std::ios::failbit);
-  }
-
-  return in;
-}
-
-std::istream& operator>>(std::istream& in, DataStruct& data)
+std::istream& matveev::operator>>(std::istream& in, DataStruct& data)
 {
   std::istream::sentry sentry(in);
 
@@ -125,27 +15,45 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
   }
 
   DataStruct input;
-  FieldsState state;
+  bool hasKey1 = false;
+  bool hasKey2 = false;
+  bool hasKey3 = false;
 
   in >> DelimiterIO{ '(' } >> DelimiterIO{ ':' };
 
-  std::array< int, 3 > fields{ { 0, 0, 0 } };
+  for (int i = 0; in && i < 3; ++i)
+  {
+    in >> LabelIO{ "key" };
 
-  std::for_each(
-    fields.begin(),
-    fields.end(),
-    [&in, &input, &state](int)
+    char number = 0;
+    in >> number;
+
+    if (number == '1' && !hasKey1)
     {
-      if (in)
-      {
-        in >> FieldIO{ input, state } >> DelimiterIO{ ':' };
-      }
+      in >> UllLitIO{ input.key1 };
+      hasKey1 = true;
     }
-  );
+    else if (number == '2' && !hasKey2)
+    {
+      in >> ChrLitIO{ input.key2 };
+      hasKey2 = true;
+    }
+    else if (number == '3' && !hasKey3)
+    {
+      in >> StringIO{ input.key3 };
+      hasKey3 = true;
+    }
+    else
+    {
+      in.setstate(std::ios::failbit);
+    }
+
+    in >> DelimiterIO{ ':' };
+  }
 
   in >> DelimiterIO{ ')' };
 
-  if (in && allFieldsRead(state))
+  if (in && hasKey1 && hasKey2 && hasKey3)
   {
     data = input;
   }
@@ -157,26 +65,19 @@ std::istream& operator>>(std::istream& in, DataStruct& data)
   return in;
 }
 
-bool readDataStructFromLine(const Line& line, DataStruct& data)
+std::ostream& matveev::operator<<(std::ostream& out, const DataStruct& data)
 {
-  std::istringstream input(line.value);
+  std::ostream::sentry sentry(out);
 
-  input >> data;
-  input >> std::ws;
+  if (!sentry)
+  {
+    return out;
+  }
 
-  return input && input.eof();
-}
-
-std::ostream& operator<<(std::ostream& out, const DataStruct& data)
-{
-  IOGuard guard(out);
-
-  out << "(:";
-  out << "key1 " << UllLitO{ data.key1 };
-  out << ":key2 " << ChrLitO{ data.key2 };
-  out << ":key3 " << StringO{ data.key3 };
+  out << "(:key1 " << data.key1 << "ull";
+  out << ":key2 '" << data.key2 << "'";
+  out << ":key3 \"" << data.key3 << "\"";
   out << ":)";
 
   return out;
-}
 }
