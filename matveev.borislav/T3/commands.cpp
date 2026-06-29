@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "ioGuard.hpp"
+#include <ioGuard.hpp>
 #include "polygonAlgorithms.hpp"
 
 namespace
