@@ -1,6 +1,7 @@
 #include "commands.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <functional>
 #include <iomanip>
@@ -14,6 +15,7 @@
 #include <vector>
 
 #include <ioGuard.hpp>
+
 #include "polygonAlgorithms.hpp"
 
 namespace
@@ -125,6 +127,24 @@ namespace
   {
     out << std::min_element(data.begin(), data.end(), isLessVertexes)->points.size();
   }
+
+  bool restOfLineIsBlank(std::istream& in)
+  {
+    std::istream::int_type next = in.peek();
+
+    while (next != std::char_traits< char >::eof() && next != '\n')
+    {
+      if (!std::isspace(next))
+      {
+        return false;
+      }
+
+      in.get();
+      next = in.peek();
+    }
+
+    return true;
+  }
 }
 
 void matveev::doArea(std::istream& in, std::ostream& out, const data_t& data)
@@ -135,6 +155,11 @@ void matveev::doArea(std::istream& in, std::ostream& out, const data_t& data)
   if (!in)
   {
     throw std::logic_error("missing argument");
+  }
+
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
   }
 
   std::map< std::string, std::function< double(const data_t&) > > subcommands;
@@ -169,6 +194,11 @@ void matveev::doCount(std::istream& in, std::ostream& out, const data_t& data)
   if (!in)
   {
     throw std::logic_error("missing argument");
+  }
+
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
   }
 
   std::map< std::string, std::function< bool(const Polygon&) > > predicates;
@@ -207,6 +237,11 @@ void matveev::doMax(std::istream& in, std::ostream& out, const data_t& data)
     throw std::logic_error("missing argument");
   }
 
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
+  }
+
   std::map< std::string, std::function< void(std::ostream&, const data_t&) > > subcommands;
   subcommands["AREA"] = printMaxArea;
   subcommands["VERTEXES"] = printMaxVertexes;
@@ -232,6 +267,11 @@ void matveev::doMin(std::istream& in, std::ostream& out, const data_t& data)
   if (!in)
   {
     throw std::logic_error("missing argument");
+  }
+
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
   }
 
   std::map< std::string, std::function< void(std::ostream&, const data_t&) > > subcommands;
@@ -261,6 +301,11 @@ void matveev::doInFrame(std::istream& in, std::ostream& out, const data_t& data)
     throw std::logic_error("invalid polygon");
   }
 
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
+  }
+
   Frame frame = getFrame(data);
 
   if (isPolygonInFrame(frame, polygon))
@@ -281,6 +326,11 @@ void matveev::doIntersections(std::istream& in, std::ostream& out, const data_t&
   if (!in)
   {
     throw std::logic_error("invalid polygon");
+  }
+
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
   }
 
   using namespace std::placeholders;
