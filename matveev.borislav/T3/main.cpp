@@ -40,7 +40,9 @@ int main(int argc, char* argv[])
     }
   }
 
-  using handler_t = std::function< void(std::istream&, std::ostream&, const matveev::data_t&) >;
+  matveev::Contexts contexts(polygons);
+
+  using handler_t = std::function< bool(std::istream&, std::ostream&, matveev::Contexts&) >;
   std::map< std::string, handler_t > commands;
   commands["AREA"] = matveev::doArea;
   commands["COUNT"] = matveev::doCount;
@@ -48,6 +50,9 @@ int main(int argc, char* argv[])
   commands["MIN"] = matveev::doMin;
   commands["INFRAME"] = matveev::doInFrame;
   commands["INTERSECTIONS"] = matveev::doIntersections;
+  commands["CONTEXT"] = matveev::doContext;
+  commands["POPCONTEXT"] = matveev::doPopContext;
+  commands["LEVEL"] = matveev::doLevel;
 
   std::string command;
 
@@ -55,8 +60,10 @@ int main(int argc, char* argv[])
   {
     try
     {
-      commands.at(command)(std::cin, std::cout, polygons);
-      std::cout << "\n";
+      if (commands.at(command)(std::cin, std::cout, contexts))
+      {
+        std::cout << "\n";
+      }
     }
     catch (const std::exception&)
     {

@@ -50,6 +50,11 @@ namespace
     return matveev::isPolygonIntersect(target, polygon);
   }
 
+  bool hasArea(double target, const matveev::Polygon& polygon)
+  {
+    return matveev::getPolygonArea(polygon) == target;
+  }
+
   double getArea(const matveev::Polygon& polygon)
   {
     return matveev::getPolygonArea(polygon);
@@ -128,6 +133,46 @@ namespace
     out << std::min_element(data.begin(), data.end(), isLessVertexes)->points.size();
   }
 
+  matveev::data_t filterEven(const matveev::data_t& source)
+  {
+    matveev::data_t result;
+    std::copy_if(source.begin(), source.end(), std::back_inserter(result), isEvenVertexes);
+    return result;
+  }
+
+  matveev::data_t filterOdd(const matveev::data_t& source)
+  {
+    matveev::data_t result;
+    std::copy_if(source.begin(), source.end(), std::back_inserter(result), isOddVertexes);
+    return result;
+  }
+
+  matveev::data_t filterVertexCount(const matveev::data_t& source, std::size_t count)
+  {
+    matveev::data_t result;
+    using namespace std::placeholders;
+    std::copy_if(source.begin(), source.end(), std::back_inserter(result), std::bind(hasVertexCount, count, _1));
+    return result;
+  }
+
+  matveev::data_t filterMinArea(const matveev::data_t& source)
+  {
+    double value = matveev::getPolygonArea(*std::min_element(source.begin(), source.end(), isLessArea));
+    matveev::data_t result;
+    using namespace std::placeholders;
+    std::copy_if(source.begin(), source.end(), std::back_inserter(result), std::bind(hasArea, value, _1));
+    return result;
+  }
+
+  matveev::data_t filterMaxArea(const matveev::data_t& source)
+  {
+    double value = matveev::getPolygonArea(*std::max_element(source.begin(), source.end(), isLessArea));
+    matveev::data_t result;
+    using namespace std::placeholders;
+    std::copy_if(source.begin(), source.end(), std::back_inserter(result), std::bind(hasArea, value, _1));
+    return result;
+  }
+
   bool restOfLineIsBlank(std::istream& in)
   {
     std::istream::int_type next = in.peek();
@@ -147,8 +192,40 @@ namespace
   }
 }
 
-void matveev::doArea(std::istream& in, std::ostream& out, const data_t& data)
+matveev::Contexts::Contexts(const data_t& base):
+  stack_(1, base)
+{}
+
+const matveev::data_t& matveev::Contexts::current() const
 {
+  return stack_.back();
+}
+
+std::size_t matveev::Contexts::level() const
+{
+  return stack_.size() - 1;
+}
+
+void matveev::Contexts::push(const data_t& context)
+{
+  stack_.push_back(context);
+}
+
+bool matveev::Contexts::pop()
+{
+  if (stack_.size() <= 1)
+  {
+    return false;
+  }
+
+  stack_.pop_back();
+  return true;
+}
+
+bool matveev::doArea(std::istream& in, std::ostream& out, Contexts& contexts)
+{
+  const data_t& data = contexts.current();
+
   std::string arg;
   in >> arg;
 
@@ -170,7 +247,7 @@ void matveev::doArea(std::istream& in, std::ostream& out, const data_t& data)
   if (subcommands.find(arg) != subcommands.end())
   {
     printArea(out, subcommands.at(arg)(data));
-    return;
+    return true;
   }
 
   std::size_t count = readSize(arg);
@@ -184,10 +261,13 @@ void matveev::doArea(std::istream& in, std::ostream& out, const data_t& data)
   using namespace std::placeholders;
   std::copy_if(data.begin(), data.end(), std::back_inserter(selected), std::bind(hasVertexCount, count, _1));
   printArea(out, getAreaSum(selected));
+  return true;
 }
 
-void matveev::doCount(std::istream& in, std::ostream& out, const data_t& data)
+bool matveev::doCount(std::istream& in, std::ostream& out, Contexts& contexts)
 {
+  const data_t& data = contexts.current();
+
   std::string arg;
   in >> arg;
 
@@ -208,7 +288,7 @@ void matveev::doCount(std::istream& in, std::ostream& out, const data_t& data)
   if (predicates.find(arg) != predicates.end())
   {
     out << std::count_if(data.begin(), data.end(), predicates.at(arg));
-    return;
+    return true;
   }
 
   std::size_t count = readSize(arg);
@@ -220,10 +300,13 @@ void matveev::doCount(std::istream& in, std::ostream& out, const data_t& data)
 
   using namespace std::placeholders;
   out << std::count_if(data.begin(), data.end(), std::bind(hasVertexCount, count, _1));
+  return true;
 }
 
-void matveev::doMax(std::istream& in, std::ostream& out, const data_t& data)
+bool matveev::doMax(std::istream& in, std::ostream& out, Contexts& contexts)
 {
+  const data_t& data = contexts.current();
+
   if (data.empty())
   {
     throw std::logic_error("empty data");
@@ -252,10 +335,13 @@ void matveev::doMax(std::istream& in, std::ostream& out, const data_t& data)
   }
 
   subcommands.at(arg)(out, data);
+  return true;
 }
 
-void matveev::doMin(std::istream& in, std::ostream& out, const data_t& data)
+bool matveev::doMin(std::istream& in, std::ostream& out, Contexts& contexts)
 {
+  const data_t& data = contexts.current();
+
   if (data.empty())
   {
     throw std::logic_error("empty data");
@@ -284,10 +370,13 @@ void matveev::doMin(std::istream& in, std::ostream& out, const data_t& data)
   }
 
   subcommands.at(arg)(out, data);
+  return true;
 }
 
-void matveev::doInFrame(std::istream& in, std::ostream& out, const data_t& data)
+bool matveev::doInFrame(std::istream& in, std::ostream& out, Contexts& contexts)
 {
+  const data_t& data = contexts.current();
+
   if (data.empty())
   {
     throw std::logic_error("empty data");
@@ -316,10 +405,14 @@ void matveev::doInFrame(std::istream& in, std::ostream& out, const data_t& data)
   {
     out << "<FALSE>";
   }
+
+  return true;
 }
 
-void matveev::doIntersections(std::istream& in, std::ostream& out, const data_t& data)
+bool matveev::doIntersections(std::istream& in, std::ostream& out, Contexts& contexts)
 {
+  const data_t& data = contexts.current();
+
   Polygon polygon;
   in >> polygon;
 
@@ -335,4 +428,83 @@ void matveev::doIntersections(std::istream& in, std::ostream& out, const data_t&
 
   using namespace std::placeholders;
   out << std::count_if(data.begin(), data.end(), std::bind(isIntersectWith, polygon, _1));
+  return true;
+}
+
+bool matveev::doContext(std::istream& in, std::ostream& out, Contexts& contexts)
+{
+  std::string arg;
+  in >> arg;
+
+  if (!in)
+  {
+    throw std::logic_error("missing argument");
+  }
+
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
+  }
+
+  const data_t& base = contexts.current();
+
+  if (base.empty())
+  {
+    throw std::logic_error("empty context");
+  }
+
+  std::map< std::string, std::function< data_t(const data_t&) > > filters;
+  filters["MIN-AREA"] = filterMinArea;
+  filters["MAX-AREA"] = filterMaxArea;
+  filters["EVEN"] = filterEven;
+  filters["ODD"] = filterOdd;
+
+  data_t filtered;
+
+  if (filters.find(arg) != filters.end())
+  {
+    filtered = filters.at(arg)(base);
+  }
+  else
+  {
+    std::size_t count = readSize(arg);
+    filtered = filterVertexCount(base, count);
+  }
+
+  contexts.push(filtered);
+
+  if (filtered.empty())
+  {
+    out << "<EMPTY CONTEXT>";
+    return true;
+  }
+
+  return false;
+}
+
+bool matveev::doPopContext(std::istream& in, std::ostream& out, Contexts& contexts)
+{
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
+  }
+
+  if (!contexts.pop())
+  {
+    out << "<COMMON CONTEXT>";
+    return true;
+  }
+
+  return false;
+}
+
+bool matveev::doLevel(std::istream& in, std::ostream& out, Contexts& contexts)
+{
+  if (!restOfLineIsBlank(in))
+  {
+    throw std::logic_error("trailing data");
+  }
+
+  out << "<LEVEL: " << contexts.level() << ">";
+  return true;
 }
