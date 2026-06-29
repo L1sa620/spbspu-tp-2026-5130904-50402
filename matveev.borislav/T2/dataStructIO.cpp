@@ -3,7 +3,7 @@
 #include <string>
 
 #include "dataStructIO.hpp"
-#include "ioFormat.hpp"
+#include <ioFormat.hpp>
 
 std::istream& matveev::operator>>(std::istream& in, DataStruct& data)
 {
