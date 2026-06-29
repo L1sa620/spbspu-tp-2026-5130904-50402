@@ -1,8 +1,9 @@
+#include <ioFormat.hpp>
+
 #include <istream>
 #include <string>
 
-#include "ioFormat.hpp"
-#include "ioGuard.hpp"
+#include <ioGuard.hpp>
 
 namespace
 {

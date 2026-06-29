@@ -1,4 +1,4 @@
-#include "ioGuard.hpp"
+#include <ioGuard.hpp>
 
 matveev::IOGuard::IOGuard(std::basic_ios< char >& stream):
   stream_(stream),
